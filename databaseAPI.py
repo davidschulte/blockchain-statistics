@@ -12,7 +12,9 @@ TABLES = {'blocks':         ['block_id BINARY(32) PRIMARY KEY',
                             'timestamp DATETIME NOT NULL'],
 
           'transactions':   ['tx_id BINARY(32) PRIMARY KEY',
-                             'block_id BINARY(32) NOT NULL'],
+                             'block_id BINARY(32) NOT NULL',
+                             'n_inputs SMALLINT UNSIGNED NOT NULL',
+                             'n_outputs SMALLINT UNSIGNED NOT NULL'],
 
           'inputs':         ['tx_to_id BINARY(32) NOT NULL',
                              'tx_from_id BINARY(32) NOT NULL',
@@ -100,8 +102,53 @@ class DatabaseAPI:
         self.cursor.execute(f'''
                                 INSERT IGNORE INTO blocks (block_id, n_transactions, timestamp) VALUES
                                 (UNHEX('{block.hash}'), {block.n_transactions}, '{str(block.header.timestamp)}')''')
+
+        txs_dict = {'tx_id': [], 'block_id': [], 'n_inputs': [], 'n_outputs': []}
+        inputs_dict = {'tx_to_id': [], 'tx_from_id': [], 'output_no': []}
+        outputs_dict = {'tx_from_id': [], 'output_no': [], 'wallet_id': [], 'value': []}
+
         for parser_tx in block.transactions:
-            self.add_transaction(parser_tx, block.hash)
+            tx = Transaction(parser_tx)
+
+            if tx.is_standard:
+                txs_dict['tx_id'].append(tx.id)
+                txs_dict['block_id'].append(block.hash)
+                txs_dict['n_inputs'].append(tx.n_inputs)
+                txs_dict['n_outputs'].append(tx.n_outputs)
+
+                for input_ in tx.inputs:
+                    inputs_dict['tx_from_id'].append(input_.tx_from_id)
+                    inputs_dict['tx_to_id'].append(input_.tx_to_id)
+                    inputs_dict['output_no'].append(input_.output_no)
+
+                for output in tx.outputs:
+                    outputs_dict['tx_from_id'].append(output.tx_from_id)
+                    outputs_dict['output_no'].append(output.output_no)
+                    outputs_dict['wallet_id'].append(output.wallet_id)
+                    outputs_dict['value'].append(output.value)
+
+        txs_query_str = '''INSERT IGNORE INTO transactions (tx_id, block_id, n_inputs, n_outputs) VALUES
+                        (UNHEX(%s), UNHEX(%s), %s, %s)'''
+        txs_data = list(zip(txs_dict['tx_id'], txs_dict['block_id'], txs_dict['n_inputs'], txs_dict['n_outputs']))
+        self.cursor.executemany(txs_query_str, txs_data)
+
+        inputs_query_str = '''INSERT IGNORE INTO inputs (tx_to_id, tx_from_id, output_no) VALUES
+                            (UNHEX(%s), UNHEX(%s), %s)'''
+        inputs_data = list(zip(inputs_dict['tx_from_id'], inputs_dict['tx_to_id'], inputs_dict['output_no']))
+        self.cursor.executemany(inputs_query_str, inputs_data)
+
+        outputs_query_str = '''INSERT IGNORE INTO outputs (tx_from_id, output_no, wallet_id, value) VALUES
+                        (UNHEX(%s), %s, %s, %s)'''
+        outputs_data = list(zip(outputs_dict['tx_from_id'], outputs_dict['output_no'], outputs_dict['wallet_id'], outputs_dict['value']))
+        self.cursor.executemany(outputs_query_str, outputs_data)
+
+        self.db.commit()
+        # pd.DataFrame(txs_dict).to_sql('transactions', self.db, if_exists='append')
+        # pd.DataFrame(inputs_dict).to_sql('inputs', self.db, if_exists='append')
+        # pd.DataFrame(outputs_dict).to_sql('outputs', self.db, if_exists='append')
+
+        # self.add_transaction(parser_tx, block.hash)
+
 
     def add_transaction(self, parser_tx, block_hash):
         tx = Transaction(parser_tx)
@@ -126,8 +173,4 @@ class DatabaseAPI:
         self.db.commit()
 
     def compute_wallets_table(self):
-        self.cursor.execute(f'''
-                                INSERT IGNORE INTO outputs (tx_from_id, tx_output_no, wallet, value) VALUES
-                                (UNHEX('{output.tx_id}'), {output.output_no}, '{output.wallet}', {output.value})''')
-
-        self.db.commit()
+        pass

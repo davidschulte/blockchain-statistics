@@ -16,12 +16,12 @@ class Analyzer:
         {self.db.join_tables(['blocks', 'transactions', 'outputs'])}
         GROUP BY DAY(timestamp) ORDER BY DAY(timestamp)''')
 
-    def getget(self):
-        self.cursor.execute(
-            '''SELECT DAY(timestamp), MONTH(timestamp), YEAR(timestamp),
-            SUM(value) AS volume, SUM(n_transactions) AS n_transactions
-            from blocks INNER JOIN transactions ON blocks.block_id = transactions.block_id INNER JOIN
-            outputs ON transactions.tx_id = outputs.tx_from_id
-            GROUP BY YEAR(timestamp), MONTH(timestamp), DAY(timestamp)
-            ORDER BY DAY(timestamp);'''
-        )
+    # def getget(self):
+    #     self.cursor.execute(
+    #         '''SELECT DAY(timestamp), MONTH(timestamp), YEAR(timestamp),
+    #         SUM(value) AS volume, SUM(n_transactions) AS n_transactions
+    #         from blocks INNER JOIN transactions ON blocks.block_id = transactions.block_id INNER JOIN
+    #         outputs ON transactions.tx_id = outputs.tx_from_id
+    #         GROUP BY YEAR(timestamp), MONTH(timestamp), DAY(timestamp)
+    #         ORDER BY DAY(timestamp);'''
+    #     )

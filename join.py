@@ -1,17 +1,6 @@
-import os
-import pathlib
-from blockchain_parser.blockchain import Blockchain
 from databaseAPI import DatabaseAPI
-import time
 
 api = DatabaseAPI()
-#g = api.get_query_generator("SELECT tx_from_id FROM inputs")
-
-# print(type(next(g)[0]))
-
-# api.reset_database()
-
-#queryt = f"SELECT COUNT(*) FROM inputs INNER JOIN outputs ON inputs.tx_from_id = outputs.tx_from_id AND inputs.tx_output_no = outputs.tx_output_no"
 query = api.join_tables(['inputs', 'outputs'])
 
 

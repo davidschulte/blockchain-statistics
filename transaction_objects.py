@@ -22,20 +22,20 @@ class Transaction:
 
 class Input:
 
-    def __init__(self, input_: ParserIn, tx_id: str):
-        self.tx_id = tx_id
-        self.tx_from = input_.transaction_hash
-        self.tx_output_no = input_.transaction_index
+    def __init__(self, input_: ParserIn, tx_to_id: str):
+        self.tx_to_id = tx_to_id
+        self.tx_from_id = input_.transaction_hash
+        self.output_no = input_.transaction_index
 
 
 class Output:
 
-    def __init__(self, output: ParserOut, tx_id: str, output_no: int):
+    def __init__(self, output: ParserOut, tx_from_id: str, output_no: int):
         self.is_standard = output.type != "OP_RETURN"
 
         if self.is_standard:
-            self.tx_id = tx_id
+            self.tx_from_id = tx_from_id
             self.output_no = output_no
-            self.wallet = output.addresses[0].address
+            self.wallet_id = output.addresses[0].address
             self.value = output.value
 
