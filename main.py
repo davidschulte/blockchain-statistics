@@ -8,8 +8,8 @@ blockchain = Blockchain(path)
 api = DatabaseAPI()
 tic = time.time()
 blocks = blockchain.get_unordered_blocks()
-start = 2001
-stop = 2500
+start = 501
+stop = 700
 for block_num in range(stop):
     block = next(blocks)
     if block_num >= start - 1:

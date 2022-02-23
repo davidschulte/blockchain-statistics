@@ -19,6 +19,8 @@ TABLES = {'blocks':         ['block_id BINARY(32) PRIMARY KEY',
           'inputs':         ['tx_to_id BINARY(32) NOT NULL',
                              'tx_from_id BINARY(32) NOT NULL',
                              'output_no SMALLINT UNSIGNED NOT NULL',
+                             'wallet_id VARCHAR(46)',
+                             'value BIGINT UNSIGNED',
                              'PRIMARY KEY (tx_from_id, output_no)'],
 
           'outputs':        ['tx_from_id BINARY(32) NOT NULL',
@@ -49,8 +51,9 @@ class DatabaseAPI:
     def create_tables(self):
 
         for table_name, table_attributes in TABLES.items():
-            attributes_str = ', '.join(table_attributes)
-            self.cursor.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({attributes_str})')
+            if table_name != 'wallets':
+                attributes_str = ', '.join(table_attributes)
+                self.cursor.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({attributes_str})')
         # self.cursor.execute('CREATE TABLE IF NOT EXISTS blocks (block_id BINARY(32) PRIMARY KEY, n_transactions INT, timestamp DATETIME)')
         # self.cursor.execute('CREATE TABLE IF NOT EXISTS transactions (tx_id BINARY(32) PRIMARY KEY, block_id BINARY(32), n_inputs BIT(5), n_outputs BIT(5))')
         # self.cursor.execute('CREATE TABLE IF NOT EXISTS inputs (tx_to_id BINARY(32), tx_from_id BINARY(32), tx_output_no BIGINT, '+
@@ -149,7 +152,6 @@ class DatabaseAPI:
 
         # self.add_transaction(parser_tx, block.hash)
 
-
     def add_transaction(self, parser_tx, block_hash):
         tx = Transaction(parser_tx)
 
@@ -172,5 +174,13 @@ class DatabaseAPI:
 
         self.db.commit()
 
-    def compute_wallets_table(self):
-        pass
+    def update_inp_table(self):
+        self.cursor.execute('UPDATE inputs LEFT JOIN outputs USING(tx_from_id, output_no) SET inputs.wallet_id=outputs.wallet_id, inputs.value=outputs.value')
+        self.db.commit()
+
+    # def create_wallets_table(self):
+    #     attributes = TABLES['wallets']
+    #     attributes_str = ', '.join(attributes)
+    #     self.cursor.execute(f'CREATE TABLE IF NOT EXISTS wallets ({attributes_str})')
+
+
