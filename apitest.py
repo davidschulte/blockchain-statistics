@@ -12,9 +12,10 @@ analyzer = Analyzer(api)
 
 vol_by_day = list(analyzer.get_volume_by_day())
 
-days = [str(x[0]) for x in vol_by_day][1:-1]
+months = [str(x[0]) for x in vol_by_day][1:-1]
+days = [str(x[1]) for x in vol_by_day][1:-1]
 # print(days)
-vols = [int(x[1])/10**14 for x in vol_by_day][1:-1]
+vols = [int(x[2])/10**14 for x in vol_by_day][1:-1]
 print(vols)
 # print(vols)
 # print(type(vols[0]))

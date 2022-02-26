@@ -10,11 +10,16 @@ class Analyzer:
     def check_input_address_present(self, input_: Input):
         pass
 
+    def get_transactions_by_day(self):
+        return self.db.get_query_generator(
+            f'''SELECT MONTH(timestamp), DAY(timestamp), n_transactions FROM blocks 
+        GROUP BY MONTH(timestamp), DAY(timestamp) ORDER BY MONTH(timestamp), DAY(timestamp)''')
+
     def get_volume_by_day(self):
         return self.db.get_query_generator(
-            f'''SELECT DAY(timestamp), SUM(value) from
+            f'''SELECT MONTH(timestamp), DAY(timestamp), SUM(value) FROM
         {self.db.join_tables(['blocks', 'transactions', 'outputs'])}
-        GROUP BY DAY(timestamp) ORDER BY DAY(timestamp)''')
+        GROUP BY MONTH(timestamp), DAY(timestamp) ORDER BY MONTH(timestamp), DAY(timestamp)''')
 
     # def getget(self):
     #     self.cursor.execute(

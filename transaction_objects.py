@@ -6,9 +6,9 @@ from blockchain_parser.transaction import Output as ParserOut
 class Transaction:
 
     def __init__(self, tx: ParserTx):
-        self.id = tx.hash
-        self.inputs = [Input(p_in, tx.hash) for p_in in tx.inputs]
-        self.outputs = [Output(p_out, tx.hash, output_no) for output_no, p_out in enumerate(tx.outputs) if p_out.value > 0]
+        self.id = tx.txid
+        self.inputs = [Input(p_in, tx.txid) for p_in in tx.inputs]
+        self.outputs = [Output(p_out, tx.txid, output_no) for output_no, p_out in enumerate(tx.outputs) if p_out.value > 0]
         self.n_inputs = len(self.inputs)
         self.n_outputs = len(self.outputs)
         self.is_standard = self.check_if_standard()

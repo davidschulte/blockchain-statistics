@@ -16,11 +16,9 @@ TABLES = {'blocks':         ['block_id BINARY(32) PRIMARY KEY',
                              'n_inputs SMALLINT UNSIGNED NOT NULL',
                              'n_outputs SMALLINT UNSIGNED NOT NULL'],
 
-          'inputs':         ['tx_to_id BINARY(32) NOT NULL',
-                             'tx_from_id BINARY(32) NOT NULL',
+          'inputs':         ['tx_from_id BINARY(32) NOT NULL',
+                             'tx_to_id BINARY(32) NOT NULL',
                              'output_no SMALLINT UNSIGNED NOT NULL',
-                             'wallet_id VARCHAR(46)',
-                             'value BIGINT UNSIGNED',
                              'PRIMARY KEY (tx_from_id, output_no)'],
 
           'outputs':        ['tx_from_id BINARY(32) NOT NULL',
@@ -40,6 +38,11 @@ JOIN_COLUMNS = {repr(['blocks', 'transactions']): [['block_id', 'block_id']],
                 repr(['inputs', 'transactions']): [['tx_to_id', 'tx_id']],
                 repr(['outputs', 'transactions']): [['tx_from_id', 'tx_id']],
                 repr(['inputs', 'outputs']): [2*['tx_from_id'], 2*['output_no']]}
+
+VIEWS = {'inputs_connected': 'CREATE OR REPLACE VIEW inputs_connected AS '
+                             'SELECT tx_from_id, tx_to_id, wallet_id, value FROM inputs LEFT JOIN outputs USING(tx_from_id, output_no)',
+         'outputs_connected': 'CREATE OR REPLACE VIEW outputs_connected AS '
+                             'SELECT tx_from_id, tx_to_id, wallet_id, value FROM inputs RIGHT JOIN outputs USING(tx_from_id, output_no)'}
 
 
 class DatabaseAPI:
@@ -63,12 +66,20 @@ class DatabaseAPI:
 
         self.db.commit()
 
+    def create_views(self):
+
+        for view_name, view_query in VIEWS.items():
+            self.cursor.execute(view_query)
+
+        self.db.commit()
+
     def reset_database(self):
         confirmation = input("Are you sure that you want to reset the database? \n"
                              "This will delete everything. (Y/n)")
         if confirmation == "Y":
             self.drop_tables()
             self.create_tables()
+            self.create_views()
             print("Database reset complete")
         else:
             print("Database reset aborted")
@@ -135,7 +146,7 @@ class DatabaseAPI:
         txs_data = list(zip(txs_dict['tx_id'], txs_dict['block_id'], txs_dict['n_inputs'], txs_dict['n_outputs']))
         self.cursor.executemany(txs_query_str, txs_data)
 
-        inputs_query_str = '''INSERT IGNORE INTO inputs (tx_to_id, tx_from_id, output_no) VALUES
+        inputs_query_str = '''INSERT IGNORE INTO inputs (tx_from_id, tx_to_id, output_no) VALUES
                             (UNHEX(%s), UNHEX(%s), %s)'''
         inputs_data = list(zip(inputs_dict['tx_from_id'], inputs_dict['tx_to_id'], inputs_dict['output_no']))
         self.cursor.executemany(inputs_query_str, inputs_data)
@@ -184,3 +195,4 @@ class DatabaseAPI:
     #     self.cursor.execute(f'CREATE TABLE IF NOT EXISTS wallets ({attributes_str})')
 
 
+# SELECT i.wallet_id AS ip, o.wallet_id AS op, i.value AS ipv, o.value AS opv FROM (SELECT * FROM outputs_connected ORDER BY value DESC LIMIT 5) AS o INNER JOIN transactions AS t ON o.tx_from_id=t.tx_id INNER JOIN inputs_connected AS i ON t.tx_id=i.tx_to_id;
