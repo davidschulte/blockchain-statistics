@@ -12,7 +12,7 @@ class Analyzer:
 
     def get_transactions_by_day(self):
         return self.db.get_query_generator(
-            f'''SELECT MONTH(timestamp), DAY(timestamp), n_transactions FROM blocks 
+            f'''SELECT MONTH(timestamp), DAY(timestamp), SUM(n_transactions) FROM blocks 
         GROUP BY MONTH(timestamp), DAY(timestamp) ORDER BY MONTH(timestamp), DAY(timestamp)''')
 
     def get_volume_by_day(self):

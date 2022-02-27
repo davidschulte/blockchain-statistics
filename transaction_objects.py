@@ -36,6 +36,9 @@ class Output:
         if self.is_standard:
             self.tx_from_id = tx_from_id
             self.output_no = output_no
-            self.wallet_id = output.addresses[0].address
+            if not output.addresses:
+                self.wallet_id = 'unknown'
+            else:
+                self.wallet_id = output.addresses[0].address
             self.value = output.value
 
