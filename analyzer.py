@@ -21,6 +21,11 @@ class Analyzer:
         {self.db.join_tables(['blocks', 'transactions', 'outputs'])}
         GROUP BY MONTH(timestamp), DAY(timestamp) ORDER BY MONTH(timestamp), DAY(timestamp)''')
 
+    def get_values(self):
+        return self.db.get_query_generator(
+            '''SELECT value FROM outputs ORDER BY RAND() LIMIT 10000'''
+        )
+
     # def getget(self):
     #     self.cursor.execute(
     #         '''SELECT DAY(timestamp), MONTH(timestamp), YEAR(timestamp),
