@@ -1,6 +1,4 @@
-from databaseAPI import DatabaseAPI
+from databaseWriter import DatabaseWriter
 
-api = DatabaseAPI()
-
-
+api = DatabaseWriter()
 api.reset_database()

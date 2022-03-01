@@ -1,13 +1,9 @@
-import os
-import pathlib
-from blockchain_parser.blockchain import Blockchain
-from databaseAPI import DatabaseAPI
-import time
+from databaseReader import DatabaseReader
 from analyzer import Analyzer
 import matplotlib.pyplot as plt
 import numpy as np
 
-api = DatabaseAPI()
+api = DatabaseReader()
 analyzer = Analyzer(api)
 
 vol_by_day = list(analyzer.get_volume_by_day())

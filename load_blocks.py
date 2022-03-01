@@ -1,11 +1,11 @@
 from blockchain_parser.blockchain import Blockchain
-from databaseAPI import DatabaseAPI
+from databaseWriter import DatabaseWriter
 import time
 
 
 path = '/media/sf_blocks'
 blockchain = Blockchain(path)
-api = DatabaseAPI()
+api = DatabaseWriter()
 tic = time.time()
 blocks = blockchain.get_unordered_blocks()
 start = 8000

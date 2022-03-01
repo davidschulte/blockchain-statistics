@@ -1,10 +1,7 @@
 import mysql.connector
 from transaction_objects import Transaction
+from login_data import LOGIN_DATA
 
-LOGIN_DATA = {'host': 'localhost',
-              'user': 'david',
-              'passwd': 'bcdb4deda',
-              'database': 'bitcoindb'}
 
 # TABLES = ['blocks', 'transactions', 'outputs', 'inputs']
 TABLES = {'blocks':         ['block_id BINARY(32) PRIMARY KEY',
@@ -25,19 +22,7 @@ TABLES = {'blocks':         ['block_id BINARY(32) PRIMARY KEY',
                              'output_no SMALLINT UNSIGNED NOT NULL',
                              'wallet_id VARCHAR(46) NOT NULL',
                              'value BIGINT UNSIGNED NOT NULL',
-                             'PRIMARY KEY (tx_from_id, output_no)'],
-
-          'wallets':        ['wallet_id VARCHAR(46) NOT NULL',
-                             'tx_id BINARY(32) NOT NULL',
-                             'input_output BIT(1) NOT NULL',
-                             'value BIGINT UNSIGNED NOT NULL',
-                             'PRIMARY KEY (wallet_id, tx_id, input_output)']}
-
-
-JOIN_COLUMNS = {repr(['blocks', 'transactions']): [['block_id', 'block_id']],
-                repr(['inputs', 'transactions']): [['tx_to_id', 'tx_id']],
-                repr(['outputs', 'transactions']): [['tx_from_id', 'tx_id']],
-                repr(['inputs', 'outputs']): [2*['tx_from_id'], 2*['output_no']]}
+                             'PRIMARY KEY (tx_from_id, output_no)']}
 
 VIEWS = {'inputs_connected': 'CREATE OR REPLACE VIEW inputs_connected AS '
                              'SELECT tx_from_id, tx_to_id, wallet_id, value FROM inputs LEFT JOIN outputs USING(tx_from_id, output_no)',
@@ -45,7 +30,7 @@ VIEWS = {'inputs_connected': 'CREATE OR REPLACE VIEW inputs_connected AS '
                              'SELECT tx_from_id, tx_to_id, wallet_id, value FROM inputs RIGHT JOIN outputs USING(tx_from_id, output_no)'}
 
 
-class DatabaseAPI:
+class DatabaseWriter:
 
     def __init__(self):
         self.db = mysql.connector.connect(**LOGIN_DATA)
@@ -54,15 +39,8 @@ class DatabaseAPI:
     def create_tables(self):
 
         for table_name, table_attributes in TABLES.items():
-            if table_name != 'wallets':
-                attributes_str = ', '.join(table_attributes)
-                self.cursor.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({attributes_str})')
-        # self.cursor.execute('CREATE TABLE IF NOT EXISTS blocks (block_id BINARY(32) PRIMARY KEY, n_transactions INT, timestamp DATETIME)')
-        # self.cursor.execute('CREATE TABLE IF NOT EXISTS transactions (tx_id BINARY(32) PRIMARY KEY, block_id BINARY(32), n_inputs BIT(5), n_outputs BIT(5))')
-        # self.cursor.execute('CREATE TABLE IF NOT EXISTS inputs (tx_to_id BINARY(32), tx_from_id BINARY(32), tx_output_no BIGINT, '+
-        #                     'PRIMARY KEY (tx_from_id, tx_output_no))')
-        # self.cursor.execute('CREATE TABLE IF NOT EXISTS outputs (tx_from_id BINARY(32), tx_output_no BIT(5), '+
-        #                     'wallet VARCHAR(46), value BIGINT, PRIMARY KEY (tx_from_id, tx_output_no))')
+            attributes_str = ', '.join(table_attributes)
+            self.cursor.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({attributes_str})')
 
         self.db.commit()
 
@@ -87,17 +65,6 @@ class DatabaseAPI:
     def drop_tables(self):
         for t in TABLES.keys():
             self.cursor.execute('DROP TABLE IF EXISTS {}'.format(t))
-
-    def get_query_generator(self, q):
-        self.cursor.execute(q)
-
-        for row in self.cursor.fetchall():
-            yield row
-
-    def get_query_list(self, q):
-        self.cursor.execute(q)
-
-        return self.cursor.fetchall()
 
     def join_tables(self, tables: list):
         join_str = tables[0]
@@ -157,11 +124,6 @@ class DatabaseAPI:
         self.cursor.executemany(outputs_query_str, outputs_data)
 
         self.db.commit()
-        # pd.DataFrame(txs_dict).to_sql('transactions', self.db, if_exists='append')
-        # pd.DataFrame(inputs_dict).to_sql('inputs', self.db, if_exists='append')
-        # pd.DataFrame(outputs_dict).to_sql('outputs', self.db, if_exists='append')
-
-        # self.add_transaction(parser_tx, block.hash)
 
     def add_transaction(self, parser_tx, block_hash):
         tx = Transaction(parser_tx)
@@ -185,14 +147,6 @@ class DatabaseAPI:
 
         self.db.commit()
 
-    def update_inp_table(self):
-        self.cursor.execute('UPDATE inputs LEFT JOIN outputs USING(tx_from_id, output_no) SET inputs.wallet_id=outputs.wallet_id, inputs.value=outputs.value')
-        self.db.commit()
-
-    # def create_wallets_table(self):
-    #     attributes = TABLES['wallets']
-    #     attributes_str = ', '.join(attributes)
-    #     self.cursor.execute(f'CREATE TABLE IF NOT EXISTS wallets ({attributes_str})')
 
 
 # SELECT i.wallet_id AS ip, o.wallet_id AS op, i.value AS ipv, o.value AS opv FROM (SELECT * FROM outputs_connected ORDER BY value DESC LIMIT 5) AS o INNER JOIN transactions AS t ON o.tx_from_id=t.tx_id INNER JOIN inputs_connected AS i ON t.tx_id=i.tx_to_id;
